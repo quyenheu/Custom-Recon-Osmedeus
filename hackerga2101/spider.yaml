@@ -1,0 +1,63 @@
+name: spider
+desc: KATANA Crawling links in http site
+
+report:
+  final:
+    - "{{Output}}/linkfinding/links-{{Workspace}}.txt"
+#    - "{{Output}}/linkfinding/trufflehog-{{Workspace}}-output.txt"
+
+#nhieu params thua zl 
+params:
+  - httpFile: "{{Output}}/probing/http-{{Workspace}}.txt"
+  - linkFile: "{{Output}}/linkfinding/links-{{Workspace}}.txt"
+  - httpResponse: "{{Output}}/http-response/"
+  - spiderTimeout: "1h"
+  - spiderThreads: "10"
+  - spiderThreadHeadless: "{{ threads / 2 }}"
+  - spiderPrallel: "20"
+  - spiderDepth: "6"
+  - crawlingTime: "30"
+  - defaultUA: "User-Agent: Mozilla/5.0 (compatible; Osmedeus/v4; +https://github.com/j3ssie/osmedeus)"
+  - trufflehogThreads: "{{ threads * 8}}"
+  - httpThreads: "{{ threads * 10}}"
+  - authHeader: "true"
+  - spiderFilterExtension: "css,woff,woff2,eot,ttf,tiff,tif"
+  - spiderOutScope: "logout" # avoid logout, maybe terminate session
+
+pre_run:
+  - CreateFolder("{{Output}}/linkfinding")
+
+steps:
+  - required:
+      - "{{Binaries}}/katana"
+      - "{{httpFile}}"
+    conditions:
+      - '"{{authHeader}}"="true"'
+    source: "{{httpFile}}"
+    threads: '{{spiderPrallel}}'
+    # authenticate crawl
+    # muon chay thi lay cookie xong them vao params authHeader 
+    commands:
+      - |
+        timeout -k 1m {{spiderTimeout}} {{Binaries}}/katana -d {{spiderDepth}} -c {{spiderThreads}} -jc -ct {{crawlingTime}} -H "Cookie: $(cat /home/quyen/tools/cookies.txt)" -cos {{spiderOutScope}} -ef {{spiderFilterExtension}} -kf all -aff -u [[.line]] | anew {{linkFile}}
+      - |
+        timeout -k 1m {{spiderTimeout}} {{Binaries}}/katana -d {{spiderDepth}} -c {{spiderThreads}} -jc -ct {{crawlingTime}} -cos {{spiderOutScope}} -ef {{spiderFilterExtension}} -kf all -aff -H "Cookie: $(cat /home/quyen/tools/cookies.txt)" -headless --no-sandbox -u [[.line]] | anew {{linkFile}}
+      - |
+        timeout -k 1m {{spiderTimeout}} {{Binaries}}/katana -d {{spiderDepth}} -c {{spiderThreads}} -jc -ct {{crawlingTime}} -cos {{spiderOutScope}} -ef {{spiderFilterExtension}} -kf all -aff -u [[.line]] | anew {{linkFile}} 
+    # un-authenticate crawl
+  - conditions:
+      - '"{{authHeader}}" == ""'
+    source: "{{httpFile}}"
+    commands:
+      - timeout -k 1m {{spiderTimeout}} {{Binaries}}/katana -d {{spiderDepth}} -c {{spiderThreads}} -jc -ct {{crawlingTime}} -cos {{spiderOutScope}} -ef {{spiderFilterExtension}} -kf all -aff -u [[.line]] | anew {{linkFile}}
+      - timeout -k 1m {{spiderTimeout}} {{Binaries}}/katana -d {{spiderDepth}} -c {{spiderThreads}} -jc -ct {{crawlingTime}} -cos {{spiderOutScope}} -ef {{spiderFilterExtension}} -kf all -aff -headless --no-sandbox -u [[.line]] | anew {{linkFile}}
+
+
+  - scripts:
+      - SortU("{{linkFile}}")
+
+  # Print the file if there is not too much data
+  - conditions:
+      - "FileLength('{{linkFile}}') < 10000"
+    scripts:
+      - Cat("{{linkFile}}")

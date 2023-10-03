@@ -1,0 +1,26 @@
+name: oredirect
+desc: Run oredirect scan with HTTP data
+
+report:
+  final:
+    - "{{Output}}/vuln/oredirect/{{Workspace}}-oredirect.csv"
+
+params:
+  - sqlurlsFile: "{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt"
+  - sqlResultFile: "{{Output}}/vuln/oredirect/{{Workspace}}-oredirect.csv"
+  - header: "true"
+  - oredirectTimeout: "8h"
+  - oredirectLevel: "5"
+  - out: "{{Output}}/vuln"
+
+pre_run:
+  - ExecCmd("touch {{sqlResultFile}}")
+
+steps:
+  # oredirect scan
+  - required:
+      - "/home/quyen/tools/Oralyzer/oralyzer.py"
+    conditions:  
+      - '"{{header}}" == "true"'
+    commands:
+      - timeout -k 1m {{oredirectTimeout}} python3 /home/quyen/tools/Oralyzer/oralyzer.py -l {{sqlurlsFile}} >> {{sqlResultFile}}

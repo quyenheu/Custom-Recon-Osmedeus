@@ -1,0 +1,38 @@
+name: sqlmap
+desc: Run sqlmap scan with HTTP data
+
+report:
+  final:
+    - "{{Output}}/vuln/sqlmap/{{Workspace}}-sqlmap.csv"
+
+params:
+  - sqlurlsFile: "{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt"
+  - sqlResultFile: "{{Output}}/vuln/sqlmap/{{Workspace}}-sqlmap.csv"
+  - header: "true"
+  - sqlmapRisk: "3"
+  - sqlmapTimeout: "8h"
+  - sqlmapLevel: "5"
+  - sqlmapScope: "target.com"
+  - sqlmapTechnique: "BET"
+  - sqlmapSkip: "cookie,referer,host"
+  - out: "{{Output}}/vuln"
+
+pre_run:
+  - ExecCmd("touch {{sqlResultFile}}")
+
+steps:
+
+  # sqlmap scan
+  - required:
+      - "{{Binaries}}/sqlmap"
+    conditions: 
+      - '"{{header}}" == ""'
+    commands:
+      - |
+        sqlmap --batch --level {{sqlmapLevel}} --risk {{sqlmapRisk}} --technique={{sqlmapTechnique}} --skip="{{sqlmapSkip}}" --parse-errors  --random-agent --output-dir={{Output}}/vuln/sqlmap --scope="{{sqlmapScope}}" -m {{sqlurlsFile}} --results-file {{sqlResultFile}} | tee {{Output}}/vuln/raw/sqlmap/{{Workspace}}-sqlmap.txt
+    
+  - conditions: # con này là add cookie không phải header
+      - '"{{header}}" == "true"'
+    commands:
+      - |
+        sqlmap --batch --level {{sqlmapLevel}} --risk {{sqlmapRisk}} --technique={{sqlmapTechnique}} --cookie="$(cat /home/quyen/tools/cookies.txt)" --parse-errors  --random-agent --output-dir={{Output}}/vuln/sqlmap --scope="{{sqlmapScope}}" -m {{sqlurlsFile}} --results-file {{sqlResultFile}} | tee {{Output}}/vuln/raw/sqlmap/{{Workspace}}-sqlmap.txt

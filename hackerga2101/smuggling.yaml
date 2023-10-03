@@ -1,0 +1,31 @@
+name: smuggling
+desc: Run smuggling scan with HTTP data
+
+report:
+  final:
+    - "{{Output}}/vuln/smuggling/{{Workspace}}-smuggling.csv"
+
+params:
+  - sqlurlsFile: "{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt"
+  - sqlResultFile: "{{Output}}/vuln/smuggling/{{Workspace}}-smuggling.csv"
+  - header: "true"
+  - smugglingTimeout: "8h"
+  - smugglingLevel: "5"
+  - out: "{{Output}}/vuln"
+
+pre_run:
+  - ExecCmd("touch {{sqlResultFile}}")
+
+steps:
+  # smuggling scan
+  - required:
+      - "/home/tools/smuggler/smuggler.py"
+    conditions:  
+      - '"{{header}}" == "true"'
+    commands:
+      - |
+        for url in $(cat {{sqlurlsFile}}); do
+            echo "--------*----------------------*-----------------------*--------" >> {{sqlResultFile}}
+            echo "$url" >> {{sqlResultFile}}
+            python3 /home/tools/smuggler/smuggler.py -u "$url" >> {{sqlResultFile}}
+        done

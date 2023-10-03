@@ -1,0 +1,41 @@
+name: ssti
+desc: Run tplmapap scan with HTTP data
+
+report:
+  final:
+    - "{{Output}}/vuln/ssti/{{Workspace}}-ssti.csv"
+
+params:
+  - sqlurlsFile: "{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt"
+  - sqlResultFile: "{{Output}}/vuln/ssti/{{Workspace}}-ssti.csv"
+  - header: "true"
+  - sstiTimeout: "8h"
+  - sstiLevel: "5"
+  - out: "{{Output}}/vuln"
+
+pre_run:
+  - ExecCmd("touch {{sqlResultFile}}")
+
+steps:
+  # ssti scan
+  - required:
+      - "/home/quyen/tools/tplmap/tplmap.py"
+    conditions:  
+      - '"{{header}}" == ""'
+    commands:
+      - |
+        for url in $(cat {{sqlurlsFile}}); do
+            echo "--------*----------------------*-----------------------*--------" >> {{sqlResultFile}}
+            echo "$url" >> {{sqlResultFile}}
+            python3 /home/quyen/tools/tplmap/tplmap.py -u "$url" --level='5' >> {{sqlResultFile}}
+        done
+    
+  - conditions:
+      - '"{{header}}" == "true"'
+    commands:
+      - |
+        for url in $(cat {{sqlurlsFile}}); do
+            echo "--------*----------------------*-----------------------*--------" >> {{sqlResultFile}}
+            echo "$url" >> {{sqlResultFile}}
+            python3 /home/quyen/tools/tplmap/tplmap.py -u "$url" -c "$(cat /home/quyen/tools/cookies.txt)" -A "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36" --level='5' >> {{sqlResultFile}}
+        done

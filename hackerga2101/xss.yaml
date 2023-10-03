@@ -1,0 +1,72 @@
+name: xss
+desc: Run xsstrike scan with HTTP data
+
+report:
+  final:
+    - "{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt"
+    - "{{Output}}/vuln/xss/{{Workspace}}-xss.csv"
+
+params:
+  - archiveFile: "{{Output}}/archive/{{Workspace}}-archive.txt"
+  - httpFile: "{{Output}}/probing/http-{{Workspace}}.txt"
+  - linkFile: "{{Output}}/linkfinding/links-{{Workspace}}.txt"
+  - sqlurlsFile: "{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt"
+  - sqlResultFile: "{{Output}}/vuln/xss/{{Workspace}}-xss.csv"
+  - arjunlink : "{{Output}}/directory/{{Workspace}}-arjun.txt1"
+  - arjunlink2 : "{{Output}}/directory/{{Workspace}}-arjun2.txt"
+  - fuzzing : "{{Output}}/directory/pre-arjun-{{Workspace}}.txt"
+  - header: "true"
+  - xssTimeout: "6h"
+  - out: "{{Output}}/vuln"
+
+pre_run:
+  - ExecCmd("touch {{sqlResultFile}}")
+
+steps:
+  # clean up urls
+  - scripts:
+      - ExecCmd("cat {{linkFile}} | grep '?' | anew {{sqlurlsFile}}")
+      - ExecCmd("cat {{arjunlink}} | grep '?' | anew {{sqlurlsFile}}")
+      - ExecCmd("cat {{arjunlink2}} | grep '?' | anew {{sqlurlsFile}}")
+      - ExecCmd("cat {{archiveFile}} | grep '?' | anew {{sqlurlsFile}}")
+      - "SortU('{{Output}}/directory/pre-arjun-{{Workspace}}.txt')"
+      - ExecCmd("cat {{fuzzing}} | grep '?' | anew {{sqlurlsFile}}")
+      - "SortU('{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt')"
+  # xss scan
+  - required:
+      - "{{Binaries}}/xsstrike.py"
+    conditions:  
+      - '"{{header}}" == ""'  
+    source: "{{sqlurlsFile}}"
+    commands:
+      - |
+        for url in $(cat {{sqlurlsFile}}); do
+            echo "--------*----------------------*-----------------------*--------" >> {{sqlResultFile}}
+            echo "$url" >> {{sqlResultFile}}
+            python3 {{Binaries}}/xsstrike.py -u "$url" --skip >> {{sqlResultFile}}
+        done
+      - |
+        for url in $(cat {{sqlurlsFile}}); do
+            echo "--------*----------------------*-----------------------*--------" >> {{sqlResultFile}}
+            echo "$url" >> {{sqlResultFile}}
+            python3 {{Binaries}}/xsstrike.py -u "$url" -e base64 --skip >> {{sqlResultFile}}
+        done
+      - "python3 {{Binaries}}/xsstrike.py -u [[.line]] --crawl -l 6 --blind >> {{sqlResultFile}}"
+
+  - conditions:  
+      - '"{{header}}" == "true"'  
+    source: "{{sqlurlsFile}}"
+    commands:
+      - |
+        for url in $(cat {{sqlurlsFile}}); do
+            echo "--------*----------------------*-----------------------*--------" >> {{sqlResultFile}}
+            echo "$url" >> {{sqlResultFile}}
+            python3 {{Binaries}}/xsstrike.py -u "$url" --headers "Cookie: $(cat /home/quyen/tools/cookies.txt)" --skip >> {{sqlResultFile}}
+        done
+      - |
+        for url in $(cat {{sqlurlsFile}}); do
+            echo "--------*----------------------*-----------------------*--------" >> {{sqlResultFile}}
+            echo "$url" >> {{sqlResultFile}}
+            python3 {{Binaries}}/xsstrike.py -u "$url" --headers "Cookie: $(cat /home/quyen/tools/cookies.txt)" -e base64 --skip >> {{sqlResultFile}}
+        done
+      - "python3 {{Binaries}}/xsstrike.py -u [[.line]] --crawl -l 6 --headers \"Cookie: $(cat /home/quyen/tools/cookies.txt)\" --blind >> {{sqlResultFile}}"

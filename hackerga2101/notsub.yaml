@@ -1,0 +1,16 @@
+name: notsub
+desc: make file sub 
+
+report:
+  final:
+    - "{{Output}}/subdomain/final-{{Workspace}}.txt"
+
+pre_run:
+  - CreateFolder("{{Output}}/subdomain/")
+
+params:
+  - finalFile: "{{Output}}/subdomain/final-{{Workspace}}.txt"
+
+steps:
+  - scripts:
+      - ExecCmd("echo '{{Target}}' > {{finalFile}}")

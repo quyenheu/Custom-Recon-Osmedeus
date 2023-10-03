@@ -1,0 +1,37 @@
+name: crlf
+desc: Run crlfuzz scan with HTTP data
+
+report:
+  final:
+    - "{{Output}}/vuln/crlf/{{Workspace}}-crlf.csv"
+
+params:
+  - sqlurlsFile: "{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt"
+  - sqlResultFile: "{{Output}}/vuln/crlf/{{Workspace}}-crlf.csv"
+  - newSqlurlsFile: "{{Output}}/linkfinding/nopara-{{Workspace}}.txt"
+  - fuzzing : "{{Output}}/directory/pre-arjun-{{Workspace}}.txt"
+  - header: "true"
+  - crlfTimeout: "4h"
+  - crlfLevel: "5"
+  - crlfThreads: "30"
+  - out: "{{Output}}/vuln"
+
+pre_run:
+  - ExecCmd("cat {{linkFile}} | grep -v '?' | anew {{newSqlurlsFile}}")
+  - ExecCmd("cat {{fuzzing}} | grep -v '?' | anew {{newSqlurlsFile}}")
+  - ExecCmd("cat {{sqlurlsFile}} | anew {{newSqlurlsFile}}")
+  - ExecCmd("touch {{sqlResultFile}}")
+
+steps:
+  # ssti scan
+  - required:
+      - "{{Binaries}}/crlfuzz"
+    conditions:  
+      - '"{{header}}" == ""'
+    commands:
+      - timeout -k 1m {{corsTimeout}} crlfuzz -l {{newSqlurlsFile}} -s -o {{sqlResultFile}}
+    
+  - conditions:
+      - '"{{header}}" == "true"'
+    commands:
+      - timeout -k 1m {{corsTimeout}} crlfuzz -l {{newSqlurlsFile}} -H "$(cat /home/tools/cookies.txt)" -s -o {{sqlResultFile}}

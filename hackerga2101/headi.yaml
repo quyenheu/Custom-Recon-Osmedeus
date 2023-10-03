@@ -1,0 +1,35 @@
+name: headi
+desc: Run headi scan with HTTP data
+
+report:
+  final:
+    - "{{Output}}/vuln/headi/{{Workspace}}-headi.csv"
+
+params:
+  - sqlurlsFile: "{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt"
+  - sqlResultFile: "{{Output}}/vuln/headi/{{Workspace}}-headi.csv"
+  - httpFile: "{{Output}}/probing/http-{{Workspace}}.txt"
+  - newSqlurlsFile: "{{Output}}/linkfinding/nopara-{{Workspace}}.txt"
+  - fuzzing : "{{Output}}/directory/pre-arjun-{{Workspace}}.txt"
+  - header: "true"
+  - headiTimeout: "4h"
+  - headiLevel: "5"
+  - headiThreads: "30"
+  - out: "{{Output}}/vuln"
+
+pre_run:
+  - ExecCmd("touch {{sqlResultFile}}")
+
+steps:
+  # headi scan
+  - required:
+      - "{{Binaries}}/headi"
+    conditions:  
+      - '"{{header}}" == "true"'
+    commands:
+      - |
+        for url in $(cat {{httpFile}}); do
+            echo "--------*----------------------*-----------------------*--------" >> {{sqlResultFile}}
+            echo "$url" >> {{sqlResultFile}}
+            headi -u "$url" >> {{sqlResultFile}}
+        done

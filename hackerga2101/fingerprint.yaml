@@ -1,0 +1,31 @@
+name: fingerprint
+desc: fingerprint HTTP technology and response
+
+report:
+  final:
+    - "{{Output}}/fingerprint/{{Workspace}}-technologies.txt"
+    - "{{Output}}/fingerprint/beautify-{{Workspace}}-http.txt"
+    - "{{Output}}/fingerprint/{{Workspace}}-http-overview.txt"
+
+params:
+  - httpFile: "{{Output}}/probing/http-{{Workspace}}.txt"
+  - overviewThreads: "{{ threads * 5 }}"
+
+pre_run:
+  - CreateFolder("{{Output}}/fingerprint")
+
+steps:
+  - required:
+      - "{{Binaries}}/httpx"
+      - "{{httpFile}}"
+    commands:
+      - cat {{httpFile}} | {{Binaries}}/httpx -t {{overviewThreads}} -no-color -json -title -tech-detect -status-code -silent >> {{Output}}/fingerprint/{{Workspace}}-http-overview.txt
+    scripts:
+      - CleanJSONHttpx('{{Output}}/fingerprint/{{Workspace}}-http-overview.txt', '{{Output}}/fingerprint/{{Workspace}}-raw-overview.txt')
+      - ExecCmd("cat {{Output}}/fingerprint/{{Workspace}}-raw-overview.txt | csvtk pretty --no-header-row -I -s ' | ' -W 75 > {{Output}}/fingerprint/beautify-{{Workspace}}-http.txt")
+      - Cat('{{Output}}/fingerprint/beautify-{{Workspace}}-http.txt')
+
+post_run:
+  - Sort("{{Storages}}/summary/{{Workspace}}/technologies-{{Workspace}}.txt")
+  - TotalTech("{{Output}}/fingerprint/{{Workspace}}-technologies.txt")
+  - GenMarkdownReport("{{Data}}/markdown/general-template.md", "{{Output}}/summary.html")

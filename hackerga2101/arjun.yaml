@@ -1,0 +1,34 @@
+name: arjun 
+desc: Finding parameter
+
+report:
+  final:
+    - "{{Output}}/directory/{{Workspace}}-arjun.txt"
+
+params:
+  - dirbFile: "{{Output}}/directory/beautify-{{Workspace}}.txt"
+  - outFile: "{{Output}}/directory/pre-arjun-{{Workspace}}.txt"
+  - spiFile: "{{Output}}/linkfinding/links-{{Workspace}}.txt"
+  - resFile1: "{{Output}}/directory/{{Workspace}}-arjun1.txt"
+  - resFile2: "{{Output}}/directory/{{Workspace}}-arjun2.txt"
+  # - wordlists_quickhits: "{{Data}}/wordlists/content/l4w_general.txt"
+  # - wordlists: "{{Data}}/wordlists/content/l4w_ext.final.txt"
+  - THREADS: "40" 
+  - timeoutArjun: "2h"
+
+pre_run:
+  - ExecCmd("touch {{sqlResultFile}}")
+
+steps:
+  # clean up urls
+  - scripts:
+      - ExecCmd("grep -v '| 503 |' {{dirbFile}} | grep -v '| 404 |' | grep -v '| 500 |' | awk -F '|' '{print $1}' | sed 's/ *$//' > {{outFile}}")
+      - ExecCmd("touch {{Output}}/directory/{{Workspace}}-arjun1.txt")
+      - ExecCmd("touch {{Output}}/directory/{{Workspace}}-arjun2.txt")
+  # arjun scan
+  - required:
+      - "{{Binaries}}/arjun"
+    commands:
+      - timeout -k 1m {{timeoutArjun}} {{Binaries}}/arjun -t {{THREADS}} -i {{outFile}} -oT {{resFile1}}
+      - timeout -k 1m {{timeoutArjun}} {{Binaries}}/arjun -t {{THREADS}} -i {{spiFile}} -oT {{resFile2}}
+      

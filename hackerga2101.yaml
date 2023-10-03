@@ -1,0 +1,57 @@
+name: hackerga2101
+desc: Custom vuln
+type: hackerga2101
+validator: domain
+
+usage: |
+    osmedeus scan -f mangtienvechome -t target.com
+#    làm sao để thêm flag (không là phải tự tay add cookie,.. vào 1 file mới)
+
+routines:
+  - modules:
+      - subdomain
+  - modules: 
+      - probing
+  - modules:
+      - screenshot   
+  - modules:
+      - spider
+  - modules:
+      - archive 
+  - modules:  # nhớ sửa wordlist | ddang ddeer -fl 116
+      - dirbscan
+  - modules:  # cải tiến dc càng tốt 
+      - vulnscan
+  - modules:
+      - headi
+  - modules:
+      - arjun
+  - modules: 
+      - xss 
+  - modules: # lỗi này nên tự làm tay với burp 
+      - pathtraversal 
+  - modules:
+      - sqlmap
+  - modules:
+      - cmdi
+  - modules: 
+      - ssti
+  - modules: # học thêm về lỗi này không hiểu bản chất đừng tool 
+      - csrf
+  - modules:
+      - cors    
+  - modules:  
+      - crlf
+  - modules:  # có thể lói là hơi thừa ))))
+      - oredirect  
+#  - modules: chưa hiểu output và cũng chưa hiểu lỗi | hiểu thì sửa lại thêm file yaml
+#      - smuggling
+#  - modules: 
+#      - xxe | cái này phải leak được file gem các thứ thì ms tool check dc 
+
+
+# gitjacker là tool để khai thác khi có link git ))) 
+#   hoiw khos   - lfi , ssrf , race condition
+
+  - modules:
+      - summary

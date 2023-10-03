@@ -1,0 +1,36 @@
+name: cors
+desc: Run corsy scan with HTTP data
+
+report:
+  final:
+    - "{{Output}}/vuln/cors/{{Workspace}}-cors.csv"
+
+params:
+  - sqlurlsFile: "{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt"
+  - sqlResultFile: "{{Output}}/vuln/cors/{{Workspace}}-cors.csv"
+  - newSqlurlsFile: "{{Output}}/linkfinding/nopara-{{Workspace}}.txt"
+  - fuzzing : "{{Output}}/directory/pre-arjun-{{Workspace}}.txt"
+  - header: "true"
+  - corsTimeout: "4h"
+  - corsLevel: "5"
+  - corsThreads: "30"
+  - out: "{{Output}}/vuln"
+
+pre_run:
+  - ExecCmd("cat {{linkFile}} | grep -v '?' | anew {{newSqlurlsFile}}")
+  - ExecCmd("cat {{fuzzing}} | grep -v '?' | anew {{newSqlurlsFile}}")
+  - ExecCmd("touch {{sqlResultFile}}")
+
+steps:
+  # ssti scan
+  - required:
+      - "/home/quyen/tools/Corsy/corsy.py"
+    conditions:  
+      - '"{{header}}" == ""'
+    commands:
+      - timeout -k 1m {{corsTimeout}} python3 /home/quyen/tools/Corsy/corsy.py -i {{newSqlurlsFile}} -t {{corsThreads}} -o {{sqlResultFile}}
+    
+  - conditions:
+      - '"{{header}}" == "true"'
+    commands:
+      - timeout -k 1m {{corsTimeout}} python3 /home/quyen/tools/Corsy/corsy.py -i {{newSqlurlsFile}} -t {{corsThreads}} --headers "$(cat /home/quyen/tools/cookies.txt)" -o {{sqlResultFile}}

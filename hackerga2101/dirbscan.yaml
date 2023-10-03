@@ -1,0 +1,45 @@
+name: dirbscan
+desc: Run Dirbscan with custom ext
+
+report:
+  final:
+    - "{{Output}}/directory/beautify-{{Workspace}}.txt"
+
+params:
+  - httpFile: "{{Output}}/probing/http-{{Workspace}}.txt"
+  - wordlists_quickhits: "{{Data}}/wordlists/content/big.txt"
+  - wordlists: "{{Data}}/wordlists/content/php.txt"
+  # - ext: '.txt,.xml,.zip,.tar,.7z,.gz,.htm,.html,.bak,.asp,.aspx,.php,.php5,.cfm,.cgi,.dll,.inc,.js,.jsp,.log,.phtml,.pl,.sh,.shtml,.sql,.swf'
+  - ext: ".asp,.aspx,.aspx~,.asp~,.py,.py~,.rb,.rb~,.php,.php~,.bak,.bkp,.cache,.cgi,.conf,.config,.csv,.html,.inc,.js,.json,.jsp,.jsp~,.log,.old,.txt,.xml,.sql,.zip,.zipx,.7z,.rar,.gz,.tgz,.tar.gz,.bz2,.xz,.htm,.log,.phtml,.pl,.sh,.shtml,.swf"
+  - lines: "20"
+  - maxtime: "3600" # 2 hours
+  - ffThreads: '20' # threads for single site
+  - dirbThreads: '20'
+  - dlimit: '50000'
+  - recursion: '6'
+  - commitLength: '500'
+  - chan: '#mics'
+
+
+pre_run:
+  - CreateFolder("{{Output}}/directory")
+
+steps:
+  - required:
+      - "{{Binaries}}/ffuf"
+      - "{{httpFile}}"
+    source: "{{httpFile}}"
+    threads: '{{dirbThreads}}'
+    commands:
+      - "{{Binaries}}/ffuf -t {{ffThreads}} -recursion -recursion-depth {{recursion}} -maxtime {{maxtime}} -timeout 10 -mc all -ac -s -fc '429,404,400' -of json -o {{Output}}/directory/raw-[[._id_]]-quickhits.json -u '[[.line]]/FUZZ' -w {{wordlists_quickhits}}:FUZZ > /dev/null 2>&1"
+      - "{{Binaries}}/ffuf -t {{ffThreads}} -recursion -recursion-depth {{recursion}} -maxtime {{maxtime}} -e '{{ext}}' -timeout 10 -mc all -ac -s -fc '429,404,400' -of json -o {{Output}}/directory/raw-[[._id_]].json -u '[[.line]]/FUZZ' -w {{wordlists}}:FUZZ > /dev/null 2>&1"
+
+  - scripts:
+      - ExecCmd("cat {{Output}}/directory/raw-*.json | jq -r '.results[] | [.url, (.status | tostring), (.length | tostring), (.words | tostring), (.lines | tostring), null, .redirectlocation] | join(\",\")' > {{Output}}/directory/beautify-nofilter-{{Workspace}}.csv")
+      # - ExecCmd("rm -rf {{Output}}/directory/raw-*.json")
+      - ExecCmd("cat {{Output}}/directory/beautify-nofilter-{{Workspace}}.csv | {{Binaries}}/csvtk cut -f 1,2,3,4,5,7 -I | {{Binaries}}/csvtk uniq -I | {{Binaries}}/csvtk pretty -I -s ' | ' -W 75 > {{Output}}/directory/beautify-{{Workspace}}.txt")
+      - TeleMessByFile("#dirb", "{{Output}}/directory/beautify-{{Workspace}}.txt")
+      - Cat("{{Output}}/directory/beautify-{{Workspace}}.txt")
+
+post_run:
+  - TotalDirb("{{Output}}/directory/beautify-{{Workspace}}.txt")

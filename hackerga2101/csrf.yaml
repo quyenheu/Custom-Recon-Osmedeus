@@ -1,0 +1,38 @@
+name: csrf
+desc: Run xsrfprobe scan with HTTP data
+
+report:
+  final:
+    - "{{Output}}/vuln/csrf/{{Workspace}}-csrf.csv"
+
+params:
+  - sqlurlsFile: "{{Output}}/linkfinding/sqlurls-{{Workspace}}.txt"
+  - linkFile: "{{Output}}/linkfinding/links-{{Workspace}}.txt"
+  - sqlResultFile: "{{Output}}/vuln/csrf"
+  - header: "true"
+  - csrfTimeout: "8h"
+  - csrfLevel: "5"
+  - out: "{{Output}}/vuln"
+
+pre_run:
+  - ExecCmd("touch {{sqlResultFile}}")
+
+steps:
+  # csrf scan
+  - required:
+      - "{{Binaries}}/xsrfprobe"
+    conditions:  
+      - '"{{header}}" == ""'
+    commands:
+      - |
+        for url in $(cat {{linkFile}}); do
+            {{Binaries}}/xsrfprobe -u "$url" -o {{sqlResultFile}}
+        done
+    
+  - conditions:
+      - '"{{header}}" == "true"'
+    commands:
+      - |
+        for url in $(cat {{sqlurlsFile}}); do
+            {{Binaries}}/xsrfprobe -u "$url" -c "$(cat /home/quyen/tools/cookies.txt)" --user-agent "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36" -o {{sqlResultFile}}
+        done
