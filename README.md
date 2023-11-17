@@ -1,2 +1,2 @@
-# ctool
-custom tool osmedeus
+# Custom tool Recon and Detech Vulnerebility
+Based on osmedeus 
