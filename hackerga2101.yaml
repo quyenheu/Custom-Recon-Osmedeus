@@ -20,7 +20,7 @@ routines:
       - archive 
   - modules:  # nhớ sửa wordlist | ddang ddeer -fl 116
       - dirbscan
-  - modules:  # cải tiến dc càng tốt 
+  - modules:  
       - vulnscan
   - modules:
       - headi
@@ -28,7 +28,7 @@ routines:
       - arjun
   - modules: 
       - xss 
-  - modules: # lỗi này nên tự làm tay với burp 
+  - modules:  
       - pathtraversal 
   - modules:
       - sqlmap
@@ -36,22 +36,19 @@ routines:
       - cmdi
   - modules: 
       - ssti
-  - modules: # học thêm về lỗi này không hiểu bản chất đừng tool 
+  - modules:  
       - csrf
   - modules:
       - cors    
   - modules:  
       - crlf
-  - modules:  # có thể lói là hơi thừa ))))
+  - modules: 
       - oredirect  
-#  - modules: chưa hiểu output và cũng chưa hiểu lỗi | hiểu thì sửa lại thêm file yaml
+#  - modules: 
 #      - smuggling
 #  - modules: 
-#      - xxe | cái này phải leak được file gem các thứ thì ms tool check dc 
-
-
-# gitjacker là tool để khai thác khi có link git ))) 
-#   hoiw khos   - lfi , ssrf , race condition
+#      - xxe
+#   hoiw khos   - ssrf , race condition
 
   - modules:
       - summary
